@@ -3,20 +3,20 @@ require_once '../config/db.php';
 
 if (isset($_GET['id']) && isset($_GET['action'])) {
     $id = $_GET['id'];
-    $action = trim($_GET['action']);
+    $action = $_GET['action'];
 
     if ($action === 'approve') {
-        $status = 'approved';
-    } elseif ($action === 'reject') {
-        $status = 'rejected'; // <-- ini harus ditambah ke ENUM juga kalau mau pake
+        $stmt = $conn->prepare("UPDATE barang SET status = 'diterima' WHERE id = ?");
+    } else if ($action === 'reject') {
+        $stmt = $conn->prepare("UPDATE barang SET status = 'ditolak' WHERE id = ?");
     }
-    
 
-
-    $stmt = $conn->prepare("UPDATE barang SET status = ? WHERE id = ?");
-    $stmt->bind_param("si", $status, $id);
-    $stmt->execute();
+    $stmt->bind_param("i", $id);
+    if ($stmt->execute()) {
+        header("Location: admin.php");
+        exit;
+    } else {
+        die("Gagal update: " . $stmt->error);
+    }
 }
-
-header("Location: admin.php");
-exit;
+?>

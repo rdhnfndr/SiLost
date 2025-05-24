@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['role']) || $_SESSION['role'] != 'user') {
-    // Jika bukan user biasa, arahkan ke halaman login atau halaman lain
+    // Jika bukan user biasa, arahkan ke halaman login
     header("Location: ../public/login.php");
     exit();
 }
@@ -9,17 +9,17 @@ include '../config/db.php';
 include '../includes/config.php';
 include '../includes/header.php';
 
-// Query untuk mengambil semua barang yang disetujui
-$query = "SELECT * FROM barang WHERE status = 'approved' ORDER BY created_at DESC";
+// Ambil semua barang yang statusnya 'diterima' dan belum dikembalikan
+$query = "SELECT * FROM barang WHERE status = 'diterima' ORDER BY created_at DESC";
 $result = $conn->query($query);
 ?>
 
 <main class="w-full px-6 lg:px-24 py-12 text-center">
-    <div
-        class="inline-flex items-center justify-center bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full px-3 py-1 mb-4">
+    <div class="inline-flex items-center justify-center bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full px-3 py-1 mb-4">
         <i class="fas fa-plane-departure mr-1"></i>
         <span>Kejujuranmu membahagiakan!</span>
     </div>
+
     <h1 class="font-extrabold text-gray-900 text-4xl lg:text-6xl leading-tight mb-4 max-w-full">
         Temukan barangmu dan laporkan <br />barang hilang
     </h1>
@@ -27,6 +27,7 @@ $result = $conn->query($query);
         Kalau nemu barang, jangan asal bawa pulang. Foto dulu, lapor di SiLost, dan amankan di pos keamanan. Kita bantu
         bareng-bareng.
     </p>
+
     <p class="text-indigo-700 font-semibold text-xs mb-1 tracking-widest">Pilihan Menu</p>
     <h2 class="font-extrabold text-gray-900 text-2xl mb-1">Cari atau Laporkan barang</h2>
     <p class="text-gray-600 text-xs mb-10">Pilih menu dibawah ini</p>
@@ -50,6 +51,36 @@ $result = $conn->query($query);
             </p>
         </button>
     </div>
+
+    <!-- Laporan Terbaru -->
+    <section class="max-w-6xl mx-auto mt-16">
+        <h2 class="font-extrabold text-gray-900 text-2xl mb-1">Laporan Barang Terbaru</h2>
+        <div class="flex flex-wrap justify-center gap-6">
+            <?php
+            // Query barang yang sudah diterima dan belum dikembalikan
+            $latestQuery = "SELECT * FROM barang WHERE status = 'diterima' AND (status_pengembalian IS NULL OR status_pengembalian = '') ORDER BY created_at DESC LIMIT 3";
+            $latestResult = $conn->query($latestQuery);
+
+            if ($latestResult && $latestResult->num_rows > 0):
+                while ($row = $latestResult->fetch_assoc()):
+            ?>
+                <div class="bg-white rounded-lg shadow-md p-4 text-left w-72 min-h-[380px] flex flex-col justify-between">
+                    <img src="../uploads/<?= htmlspecialchars($row['foto']) ?>" 
+                         alt="<?= htmlspecialchars($row['nama']) ?>" 
+                         class="w-full h-40 object-cover rounded mb-3">
+                    <h3 class="font-semibold text-lg text-gray-800"><?= htmlspecialchars($row['nama']) ?></h3>
+                    <p class="text-sm text-gray-600 mb-2">
+                        <?= htmlspecialchars(substr($row['deskripsi'], 0, 80)) ?>…
+                    </p>
+                    <a href="detailbarang.php?id=<?= $row['id'] ?>" class="text-indigo-700 text-sm hover:underline">
+                        Lihat Detail
+                    </a>
+                </div>
+            <?php endwhile; else: ?>
+                <p class="text-gray-500 col-span-3 text-center">Belum ada laporan yang disetujui.</p>
+            <?php endif; ?>
+        </div>
+    </section>
 </main>
 
 <?php include '../includes/footer.php'; ?>

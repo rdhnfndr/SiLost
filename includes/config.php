@@ -1,7 +1,17 @@
 <?php
-if (session_status() == PHP_SESSION_NONE) {
+// Mulai session kalau belum ada
+if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// Load koneksi database
+require_once __DIR__ . '/../config/db.php';
+
+// Fungsi helper cek login
+function isLoggedIn() {
+    return isset($_SESSION['user_id']);
+}
+
 ?>
 
 

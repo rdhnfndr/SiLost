@@ -25,7 +25,7 @@ include '../includes/header_admin.php';
                     <tbody class="divide-y divide-gray-200">
                         <?php
                         // Query untuk mengambil barang yang disetujui
-                        $query = "SELECT * FROM barang WHERE status = 'approved' ORDER BY created_at DESC";
+                        $query = "SELECT * FROM barang WHERE status = 'diterima' ORDER BY created_at DESC";
                         $result = $conn->query($query);
 
                         // Cek apakah ada hasil

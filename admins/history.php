@@ -1,56 +1,79 @@
-
 <?php
-require_once '../config/db.php';
 session_start();
-
-// Query untuk mendapatkan barang yang sudah di-approve atau di-reject
-$sql = "SELECT * FROM barang WHERE status IN ('approved', 'rejected') ORDER BY tanggal_hilang DESC";
-$result = $conn->query($sql);
-
-if ($result === false) {
-    die("Query error: " . $conn->error);
-}
-
+require '../config/db.php';
 include '../includes/config.php';
-include '../includes/header.php';
+include '../includes/header_admin.php';
+
+// Cek apakah kolom updated_at ada, kalau nggak ada, pake created_at sebagai gantinya
+$checkUpdated = $conn->query("SHOW COLUMNS FROM barang LIKE 'updated_at'");
+$orderBy = ($checkUpdated->num_rows > 0) ? "updated_at" : "created_at";
+
+// Ambil data barang + nama user, status history
+$sql = "SELECT b.*, u.nama AS nama_pelapor 
+        FROM barang b 
+        LEFT JOIN users u ON b.user_id = u.id 
+        WHERE b.status IN ('diterima', 'ditolak', 'selesai', 'dikembalikan')
+        ORDER BY b.$orderBy DESC";
+$result = $conn->query($sql);
 ?>
 
 <div class="flex min-h-screen bg-gray-50">
-    <?php include '../includes/sidebar.php'; ?>
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-md">
+        <?php include '../includes/sidebar.php'; ?>
+    </aside>
 
-    <main class="flex-1 overflow-y-auto p-8">
-        <section class="mb-12">
-            <h1 class="text-3xl font-extrabold text-gray-900 mb-8">History Barang</h1>
-            <div class="overflow-x-auto bg-white rounded-lg shadow">
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-indigo-100 text-indigo-700 font-semibold">
-                        <tr>
-                            <th class="px-6 py-3 text-left">ID</th>
-                            <th class="px-6 py-3 text-left">Nama Barang</th>
-                            <th class="px-6 py-3 text-left">Tanggal</th>
-                            <th class="px-6 py-3 text-left">Status</th>
+    <!-- Main content -->
+    <main class="flex-1 p-8 overflow-y-auto">
+        <h2 class="text-2xl font-extrabold text-gray-900 mb-6">History Barang</h2>
+
+        <div class="overflow-x-auto bg-white rounded-lg shadow">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-200 text-gray-700 font-semibold">
+                    <tr>
+                        <th class="px-6 py-3 text-left">Nama Barang</th>
+                        <th class="px-6 py-3 text-left">Pelapor</th>
+                        <th class="px-6 py-3 text-left">Bukti Pengembalian</th>
+                        <th class="px-6 py-3 text-left">Status</th>
+                        <th class="px-6 py-3 text-left">Tanggal Pengembalian</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while ($row = $result->fetch_assoc()): ?>
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="border px-4 py-2"><?= htmlspecialchars($row['nama']) ?></td>
+                            <td class="border px-4 py-2"><?= htmlspecialchars($row['nama_pelapor'] ?? 'Unknown') ?></td>
+
+                            <td class="border px-4 py-2">
+                                <?php if ($row['status'] === 'dikembalikan'): ?>
+                                    <?php if (!empty($row['foto_bukti_pengembalian'])): ?>
+                                        <img src="../uploads/<?= htmlspecialchars($row['foto_bukti_pengembalian']) ?>" 
+                                             alt="Bukti" class="w-24 h-24 object-cover rounded shadow" />
+                                    <?php else: ?>
+                                        <span class="italic text-gray-400">Tidak ada bukti</span>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span class="text-gray-400">-</span>
+                                <?php endif; ?>
+                            </td>
+
+                            <td class="border px-4 py-2 font-semibold capitalize text-indigo-700">
+                                <?= htmlspecialchars($row['status']) ?>
+                            </td>
+
+                            <td class="border px-4 py-2">
+                                <?php
+                                if ($row['status'] === 'dikembalikan' && !empty($row['tanggal_pengembalian'])) {
+                                    echo date('d-m-Y H:i', strtotime($row['tanggal_pengembalian']));
+                                } else {
+                                    echo '-';
+                                }
+                                ?>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php while ($row = mysqli_fetch_assoc($result)): ?>
-                            <tr class="<?= $row['status'] == 'approved' ? 'bg-green-50' : 'bg-red-50' ?>">
-                                <td class="border px-4 py-2"><?= $row['id'] ?></td>
-                                <td class="border px-4 py-2"><?= $row['nama'] ?></td>
-                                <td class="border px-4 py-2"><?= date('d-m-Y', strtotime($row['tanggal_hilang'])) ?></td>
-                                <td class="border px-4 py-2">
-                                    <span class="<?= $row['status'] == 'approved' ? 'text-green-600' : 'text-red-600' ?>">
-                                        <?= ucfirst($row['status']) ?>
-                                    </span>
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-            </div>
-        </section>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
     </main>
 </div>
-
-<footer class="text-gray-400 text-xs lg:text-sm pt-6 text-center">
-    &copy; 2024–2025 SiLost. All Rights Reserved.
-</footer>

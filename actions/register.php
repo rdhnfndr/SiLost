@@ -4,12 +4,13 @@ include '../config/db.php';
 // Mengambil data dari form
 $nama = $_POST['nama'];
 $email = $_POST['email'];
+$username = $_POST['username'] ?? '';
 $pass = password_hash($_POST['password'], PASSWORD_BCRYPT);
 $role = 'user'; // Menetapkan role sebagai 'user'
 
 // Menyiapkan statement untuk memasukkan data ke dalam tabel users
-$stmt = $conn->prepare("INSERT INTO users (nama, email, password, role) VALUES (?, ?, ?, ?)");
-$stmt->bind_param("ssss", $nama, $email, $pass, $role);
+$stmt = $conn->prepare("INSERT INTO users (nama, email, username, password, role) VALUES (?, ?, ?, ?, 'user')");
+$stmt->bind_param("ssss", $nama, $email, $username, $pass);
 
 // Menjalankan statement
 if ($stmt->execute()) {

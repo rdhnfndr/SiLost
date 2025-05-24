@@ -14,7 +14,10 @@ $user = $result->fetch_assoc();
 if ($user && password_verify($password, $user['password'])) {
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['role'] = $user['role'];
-
+    
+    // Tambahin ini biar header bisa nampilin nama user
+    $_SESSION['username'] = $user['nama'];  // pastikan kolom 'nama' memang ada di DB
+    
     if ($user['role'] == 'admin') {
         header("Location: ../admins/admin.php");
     } else {
