@@ -1,35 +1,42 @@
 <?php
 require_once '../config/db.php';
-session_start();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $barang_id = intval($_POST['barang_id']);
-    $action = $_POST['action'] ?? '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['barang_id'])) {
+    $barangId = $_POST['barang_id'];
 
-    if ($action === 'approve') {
-        // Update status jadi 'dikembalikan' dan tanggal pengembalian sekarang
-        $tanggalSekarang = date('Y-m-d H:i:s');
-        $sql = "UPDATE barang SET status='dikembalikan', tanggal_pengembalian='$tanggalSekarang' WHERE id=$barang_id";
-        if ($conn->query($sql)) {
-            $_SESSION['msg'] = "Pengembalian barang disetujui.";
-        } else {
-            $_SESSION['error'] = "Gagal menyetujui pengembalian: " . $conn->error;
-        }
-    } elseif ($action === 'reject') {
-        // Hapus data barang
-        $sql = "DELETE FROM barang WHERE id=$barang_id";
-        if ($conn->query($sql)) {
-            $_SESSION['msg'] = "Pengembalian barang ditolak dan data dihapus.";
-        } else {
-            $_SESSION['error'] = "Gagal menghapus data barang: " . $conn->error;
-        }
-    } else {
-        $_SESSION['error'] = "Aksi tidak valid.";
+    // Update status_pengembalian jadi 'dikembalikan'
+    $update = $conn->prepare("UPDATE barang SET status_pengembalian = 'dikembalikan', tanggal_pengembalian = NOW() WHERE id = ?");
+    $update->bind_param("i", $barangId);
+    $update->execute();
+
+    // Ambil data user pelapor dan nama barang
+    $stmt = $conn->prepare("SELECT user_id, nama FROM barang WHERE id = ?");
+    $stmt->bind_param("i", $barangId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $barang = $result->fetch_assoc();
+
+    if ($barang) {
+        $userId = $barang['user_id'];
+        $namaBarang = $barang['nama'];
+
+        // Isi notifikasi
+        $isiNotif = "Permintaan pengembalian barang '$namaBarang' telah disetujui oleh admin.";
+        $status = 'unread';
+        $tanggal = date('Y-m-d H:i:s');
+
+        // Masukkan notifikasi ke tabel notifikasi
+        $stmt2 = $conn->prepare("INSERT INTO notifikasi (user_id, isi, status, tanggal) VALUES (?, ?, ?, ?)");
+        $stmt2->bind_param("isss", $userId, $isiNotif, $status, $tanggal);
+        $stmt2->execute();
     }
-} else {
-    $_SESSION['error'] = "Request tidak valid.";
-}
 
-// Redirect balik ke halaman permintaan pengembalian
-header('Location: pengembalian.php');
-exit;
+    // Redirect ke halaman permintaan dengan pesan sukses
+    header("Location: permintaan.php?status=approved");
+    exit;
+} else {
+    // Redirect kalau akses tidak valid
+    header("Location: permintaan.php?error=invalid_request");
+    exit;
+}
+?>

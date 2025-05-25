@@ -7,12 +7,20 @@ $q = $_GET['q'] ?? '';
 
 if ($q !== '') {
     $safeQ = $conn->real_escape_string($q);
-    $sql = "SELECT * FROM barang WHERE nama LIKE '%{$safeQ}%' AND status = 'approved'";
+    $sql = "SELECT * FROM barang 
+            WHERE nama LIKE '%{$safeQ}%' 
+              AND status = 'diterima' 
+              AND (status_pengembalian IS NULL OR status_pengembalian = '') 
+            ORDER BY created_at DESC";
     $res = $conn->query($sql);
 } else {
     $res = null;
-    // Ambil barang terbaru (status approved), default saat belum nyari apa-apa
-    $latestSql = "SELECT * FROM barang WHERE status = 'approved' ORDER BY tanggal_hilang DESC LIMIT 6";
+    // Ambil barang terbaru yang sudah diterima dan belum dikembalikan
+    $latestSql = "SELECT * FROM barang 
+                  WHERE status = 'diterima' 
+                    AND (status_pengembalian IS NULL OR status_pengembalian = '') 
+                  ORDER BY created_at DESC 
+                  LIMIT 6";
     $latestRes = $conn->query($latestSql);
 }
 ?>
@@ -41,7 +49,7 @@ if ($q !== '') {
         <p class="text-red-500">Tidak ditemukan hasil untuk “<?= htmlspecialchars($q) ?>”.</p>
     <?php else: ?>
         <h2 class="text-xl font-semibold mb-4">Laporan Terbaru</h2>
-        <?php if ($latestRes && $latestRes->num_rows > 0): ?>
+        <?php if (isset($latestRes) && $latestRes && $latestRes->num_rows > 0): ?>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <?php while ($row = $latestRes->fetch_assoc()): ?>
                     <div class="bg-white p-4 rounded shadow">

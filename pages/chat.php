@@ -103,58 +103,85 @@ $chatMessages = [];
 while ($row = $result->fetch_assoc()) {
     $chatMessages[] = $row;
 }
+
+// Tandai pesan sebagai telah dibaca
+$updateRead = $conn->prepare("UPDATE chat SET is_read = 1 WHERE penerima_id = ? AND pengirim_id = ? AND is_read = 0");
+$updateRead->bind_param("ii", $myId, $chatWithId);
+$updateRead->execute();
+
 ?>
+
 <body class="h-full flex flex-col">
 
-<div class="flex flex-grow h-screen max-h-screen bg-gray-100">
-    <!-- Sidebar -->
-    <div class="w-72 bg-white shadow-md flex flex-col">
-        <header class="px-6 py-4 text-xl font-semibold border-b border-gray-300">Chats</header>
-        <div class="flex-grow overflow-y-auto">
-            <?php foreach ($chatList as $chat) : 
-                $active = ($chat['id'] == $chatWithId) ? 'bg-indigo-100' : 'hover:bg-gray-100';
-            ?>
-                <a href="?to=<?= $chat['id'] ?>" class="block px-4 py-3 border-b border-gray-200 cursor-pointer <?= $active ?>">
-                    <div class="font-semibold text-gray-800 truncate"><?= htmlspecialchars($chat['nama']) ?></div>
-                    <div class="text-sm text-gray-500 truncate"><?= htmlspecialchars($chat['pesan']) ?></div>
-                </a>
-            <?php endforeach; ?>
+    <div class="flex flex-grow h-screen max-h-screen bg-gray-100">
+        <!-- Sidebar -->
+        <div class="w-72 bg-white shadow-md flex flex-col">
+            <header class="px-6 py-4 text-xl font-semibold border-b border-gray-300">Chats</header>
+            <div class="flex-grow overflow-y-auto">
+                <?php foreach ($chatList as $chat):
+                    $active = ($chat['id'] == $chatWithId) ? 'bg-indigo-100' : 'hover:bg-gray-100';
+
+                    // Cek apakah ada pesan terakhir dari dia ke gua dan belum dibaca
+                    $stmt = $conn->prepare("SELECT is_read FROM chat WHERE pengirim_id = ? AND penerima_id = ? ORDER BY tanggal_kirim DESC LIMIT 1");
+                    $stmt->bind_param("ii", $chat['id'], $myId);
+                    $stmt->execute();
+                    $res = $stmt->get_result();
+                    $lastMsg = $res->fetch_assoc();
+                    $isUnread = $lastMsg && $lastMsg['is_read'] == 0;
+
+                    $fontWeight = $isUnread ? 'font-bold' : 'font-normal';
+                    ?>
+                    <a href="?to=<?= $chat['id'] ?>"
+                        class="block px-4 py-3 border-b border-gray-200 cursor-pointer <?= $active ?>">
+                        <div class="<?= $fontWeight ?> text-gray-800 truncate"><?= htmlspecialchars($chat['nama']) ?></div>
+                        <div class="text-sm text-gray-500 truncate"><?= htmlspecialchars($chat['pesan']) ?></div>
+                    </a>
+                <?php endforeach; ?>
+
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="flex flex-col flex-grow bg-white shadow-md rounded-r-lg">
+            <header class="flex items-center px-6 py-4 border-b border-gray-300 bg-indigo-50">
+                <button onclick="window.location.href='index.php'" class="mr-4 text-indigo-600 hover:text-indigo-900"
+                    title="Kembali ke Home">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <h2 class="text-xl font-semibold text-gray-800">Chat dengan
+                    <?= htmlspecialchars($chatWithUser['nama']) ?>
+                </h2>
+            </header>
+
+            <main id="messages" class="flex-grow p-6 pt-8 pb-8 overflow-y-auto space-y-4 bg-gray-50">
+                <?php if (count($chatMessages) === 0): ?>
+                    <p class="text-center text-gray-500 italic">Belum ada pesan, mulai chat sekarang!</p>
+                <?php else: ?>
+                    <?php foreach ($chatMessages as $msg):
+                        $isSent = ($msg['pengirim_id'] == $myId);
+                        $bgClass = $isSent ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-gray-300 text-gray-900 rounded-bl-none';
+                        $alignClass = $isSent ? 'self-end' : 'self-start';
+                        ?>
+                        <div class="max-w-xs px-4 py-2 <?= $bgClass ?> <?= $alignClass ?> rounded-lg break-words">
+                            <?= nl2br(htmlspecialchars($msg['pesan'])) ?>
+                            <time
+                                class="block text-xs mt-1 text-gray-300 text-right"><?= date('d M H:i', strtotime($msg['tanggal_kirim'])) ?></time>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </main>
+
+            <form id="chat-form" method="POST" action="?to=<?= $chatWithId ?>"
+                class="flex border-t border-gray-300 p-4 bg-indigo-50">
+                <textarea name="pesan" rows="2" required placeholder="Ketik pesan..."
+                    class="flex-grow resize-none p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                <button type="submit"
+                    class="ml-4 bg-indigo-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-indigo-700 transition">Kirim</button>
+            </form>
         </div>
     </div>
-
-    <!-- Chat Area -->
-    <div class="flex flex-col flex-grow bg-white shadow-md rounded-r-lg">
-        <header class="flex items-center px-6 py-4 border-b border-gray-300 bg-indigo-50">
-            <button onclick="window.location.href='index.php'" class="mr-4 text-indigo-600 hover:text-indigo-900" title="Kembali ke Home">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
-            </button>
-            <h2 class="text-xl font-semibold text-gray-800">Chat dengan <?= htmlspecialchars($chatWithUser['nama']) ?></h2>
-        </header>
-
-        <main id="messages" class="flex-grow p-6 pt-8 pb-8 overflow-y-auto space-y-4 bg-gray-50">
-            <?php if (count($chatMessages) === 0) : ?>
-                <p class="text-center text-gray-500 italic">Belum ada pesan, mulai chat sekarang!</p>
-            <?php else : ?>
-                <?php foreach ($chatMessages as $msg) : 
-                    $isSent = ($msg['pengirim_id'] == $myId);
-                    $bgClass = $isSent ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-gray-300 text-gray-900 rounded-bl-none';
-                    $alignClass = $isSent ? 'self-end' : 'self-start';
-                ?>
-                    <div class="max-w-xs px-4 py-2 <?= $bgClass ?> <?= $alignClass ?> rounded-lg break-words">
-                        <?= nl2br(htmlspecialchars($msg['pesan'])) ?>
-                        <time class="block text-xs mt-1 text-gray-300 text-right"><?= date('d M H:i', strtotime($msg['tanggal_kirim'])) ?></time>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </main>
-
-        <form id="chat-form" method="POST" action="?to=<?= $chatWithId ?>" class="flex border-t border-gray-300 p-4 bg-indigo-50">
-            <textarea name="pesan" rows="2" required placeholder="Ketik pesan..." class="flex-grow resize-none p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-            <button type="submit" class="ml-4 bg-indigo-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-indigo-700 transition">Kirim</button>
-        </form>
-    </div>
-</div>
 
 </body>

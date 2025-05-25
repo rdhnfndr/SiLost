@@ -1,11 +1,11 @@
 <?php
 require_once '../config/db.php';
 
-if (isset($_GET['id']) && $_GET['action'] === 'approve') {
+if (isset($_GET['id']) && $_GET['action'] === 'reject') {
     $barangId = $_GET['id'];
 
-    // Update status barang jadi 'disetujui'
-    $stmt = $conn->prepare("UPDATE barang SET status = 'diterima', updated_at = NOW() WHERE id = ?");
+    // Update status barang jadi 'ditolak'
+    $stmt = $conn->prepare("UPDATE barang SET status = 'ditolak', updated_at = NOW() WHERE id = ?");
     $stmt->bind_param("i", $barangId);
 
     if ($stmt->execute()) {
@@ -19,7 +19,7 @@ if (isset($_GET['id']) && $_GET['action'] === 'approve') {
         if ($barang) {
             $userId = $barang['user_id'];
             $namaBarang = $barang['nama'];
-            $isiNotif = "Laporan barang '$namaBarang' telah disetujui oleh admin.";
+            $isiNotif = "Maaf, laporan barang '$namaBarang' telah ditolak oleh admin.";
             $status = 'unread';
             $tanggal = date('Y-m-d H:i:s');
 
@@ -29,17 +29,15 @@ if (isset($_GET['id']) && $_GET['action'] === 'approve') {
             $stmtNotif->execute();
         }
 
-        // Redirect ke dashboard admin setelah approve
-        header("Location: admin.php?status=approved");
+        // Redirect ke halaman permintaan setelah tolak
+        header("Location: ../admins/permintaan.php?status=rejected");
         exit;
     } else {
-        // Jika gagal update status
-        header("Location: permintaan.php?error=failed_to_approve");
+        header("Location: ../admins/permintaan.php?error=failed_to_reject");
         exit;
     }
 } else {
-    // Jika akses tidak valid
-    header("Location: admin.php?error=invalid_request");
+    header("Location: ../admins/permintaan.php?error=invalid_request");
     exit;
 }
 ?>

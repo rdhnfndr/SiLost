@@ -1,7 +1,6 @@
 <?php
 session_start();
 if (!isset($_SESSION['role']) || $_SESSION['role'] != 'user') {
-    // Jika bukan user biasa, arahkan ke halaman login
     header("Location: ../public/login.php");
     exit();
 }
@@ -9,7 +8,7 @@ include '../config/db.php';
 include '../includes/config.php';
 include '../includes/header.php';
 
-// Ambil semua barang yang statusnya 'diterima' dan belum dikembalikan
+// Ambil semua barang yang statusnya 'disetujui' dan belum dikembalikan
 $query = "SELECT * FROM barang WHERE status = 'diterima' ORDER BY created_at DESC";
 $result = $conn->query($query);
 ?>
@@ -57,7 +56,7 @@ $result = $conn->query($query);
         <h2 class="font-extrabold text-gray-900 text-2xl mb-1">Laporan Barang Terbaru</h2>
         <div class="flex flex-wrap justify-center gap-6">
             <?php
-            // Query barang yang sudah diterima dan belum dikembalikan
+            // Query barang yang sudah disetujui dan belum dikembalikan
             $latestQuery = "SELECT * FROM barang WHERE status = 'diterima' AND (status_pengembalian IS NULL OR status_pengembalian = '') ORDER BY created_at DESC LIMIT 3";
             $latestResult = $conn->query($latestQuery);
 

@@ -24,8 +24,11 @@ include '../includes/header_admin.php';
                     </thead>
                     <tbody class="divide-y divide-gray-200">
                         <?php
-                        // Query untuk mengambil barang yang disetujui
-                        $query = "SELECT * FROM barang WHERE status = 'diterima' ORDER BY created_at DESC";
+                        // Query untuk mengambil barang yang disetujui tapi belum dikembalikan
+                        $query = "SELECT * FROM barang 
+          WHERE status = 'diterima' 
+            AND (status_pengembalian IS NULL OR status_pengembalian != 'dikembalikan') 
+          ORDER BY created_at DESC";
                         $result = $conn->query($query);
 
                         // Cek apakah ada hasil
@@ -37,12 +40,12 @@ include '../includes/header_admin.php';
                                 echo "<td class='px-6 py-4'>{$row['created_at']}</td>";
                                 echo "<td class='px-6 py-4 text-green-600'>Disetujui</td>";
                                 echo "<td class='px-6 py-4'>
-                                        <a href='?delete={$row['id']}' class='bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm' onclick='return confirm(\"Apakah Anda yakin ingin menghapus laporan ini?\")'>Hapus</a>
-                                      </td>";
+                <a href='?delete={$row['id']}' class='bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm' onclick='return confirm(\"Apakah Anda yakin ingin menghapus laporan ini?\")'>Hapus</a>
+              </td>";
                                 echo "</tr>";
                             }
                         } else {
-                            echo "<tr><td colspan='5' class='px-6 py-4 text-center text-gray-500'>Tidak ada laporan yang disetujui.</td></tr>";
+                            echo "<tr><td colspan='5' class='px-6 py-4 text-center text-gray-500'>Tidak ada laporan yang aktif.</td></tr>";
                         }
 
                         // Handle proses penghapusan

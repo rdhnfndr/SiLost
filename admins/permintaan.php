@@ -2,9 +2,8 @@
 require_once '../config/db.php';
 session_start();
 
-$sql = "SELECT * FROM barang WHERE status = 'pending' ORDER BY tanggal_hilang DESC";
+$sql = "SELECT * FROM barang WHERE status IS NULL OR status = 'pending' ORDER BY created_at DESC";
 $result = $conn->query($sql);
-
 if ($result === false) {
     die("Query error: " . $conn->error);
 }
@@ -54,8 +53,12 @@ include '../includes/header_admin.php';
                                     <div class="flex gap-2">
                                         <a href="approve.php?id=<?= $row['id'] ?>&action=approve"
                                             class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">Terima</a>
-                                        <a href="approve.php?id=<?= $row['id'] ?>&action=reject"
-                                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">Tolak</a>
+                                        <a href="../actions/reject.php?id=<?= $row['id'] ?>&action=reject"
+                                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                                            onclick="return confirm('Tolak laporan ini?')">
+                                            Tolak
+                                        </a>
+
                                     </div>
                                 </td>
                             </tr>
@@ -79,7 +82,7 @@ include '../includes/header_admin.php';
                     </thead>
                     <tbody>
                         <?php
-                        $pendingPengembalian = $conn->query("SELECT * FROM barang WHERE status_pengembalian='pending' OR status_pengembalian='menunggu'");
+                        $pendingPengembalian = $conn->query("SELECT * FROM barang WHERE status_pengembalian='pending'");
                         while ($row = $pendingPengembalian->fetch_assoc()):
                             // ambil nama user pelapor
                             $user_id = intval($row['user_id']);

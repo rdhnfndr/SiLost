@@ -1,10 +1,14 @@
-
 <?php
-// Query untuk menghitung jumlah permintaan pending
 $sqlPending = "SELECT COUNT(*) as pending_count FROM barang WHERE status = 'pending'";
 $resultPending = $conn->query($sqlPending);
 $rowPending = $resultPending->fetch_assoc();
 $pendingCount = $rowPending['pending_count'];
+
+$sqlReturn = "SELECT COUNT(*) as return_count FROM barang WHERE status_pengembalian IN ('pending', 'menunggu')";
+$resultReturn = $conn->query($sqlReturn);
+$rowReturn = $resultReturn->fetch_assoc();
+$returnCount = $rowReturn['return_count'];
+
 ?>
 
 <aside class="w-64 bg-white border-r border-gray-200 flex flex-col">
@@ -21,31 +25,24 @@ $pendingCount = $rowPending['pending_count'];
         }
         ?>
         <a href="../admins/admin.php"
-            class="flex items-center space-x-3 px-3 py-2 rounded-lg <?= activeClass('dashboard.php') ?>">
-            <i class="fas fa-tachometer-alt"></i>
+            class="flex items-center space-x-3 px-3 py-2 rounded-lg <?= activeClass('admin.php') ?>">
             <span>Dashboard</span>
         </a>
         <a href="../admins/permintaan.php"
             class="flex items-center space-x-3 px-3 py-2 rounded-lg <?= activeClass('permintaan.php') ?>">
-            <i class="fas fa-search"></i>
             <span>Permintaan</span>
-            <?php if ($pendingCount > 0): ?>
-                <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full"><?= $pendingCount ?></span>
+            <?php if ($pendingCount + $returnCount > 0): ?>
+                <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    <?= $pendingCount + $returnCount ?>
+                </span>
             <?php endif; ?>
         </a>
         <a href="../admins/history.php"
             class="flex items-center space-x-3 px-3 py-2 rounded-lg <?= activeClass('history.php') ?>">
-            <i class="fas fa-plus-circle"></i>
             <span>History</span>
-        </a>
-        <a href="../admins/manajemen.php"
-            class="flex items-center space-x-3 px-3 py-2 rounded-lg <?= activeClass('manajemen.php') ?>">
-            <i class="fas fa-users"></i>
-            <span>Manajemen Pengguna</span>
         </a>
         <a href="../public/logout.php"
             class="flex items-center space-x-3 px-3 py-2 rounded-lg <?= activeClass('logout.php') ?>">
-            <i class="fas fa-cogs"></i>
             <span>Log out</span>
         </a>
     </nav>

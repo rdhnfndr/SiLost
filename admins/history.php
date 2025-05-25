@@ -4,15 +4,14 @@ require '../config/db.php';
 include '../includes/config.php';
 include '../includes/header_admin.php';
 
-// Cek apakah kolom updated_at ada, kalau nggak ada, pake created_at sebagai gantinya
 $checkUpdated = $conn->query("SHOW COLUMNS FROM barang LIKE 'updated_at'");
 $orderBy = ($checkUpdated->num_rows > 0) ? "updated_at" : "created_at";
 
-// Ambil data barang + nama user, status history
 $sql = "SELECT b.*, u.nama AS nama_pelapor 
         FROM barang b 
         LEFT JOIN users u ON b.user_id = u.id 
-        WHERE b.status IN ('diterima', 'ditolak', 'selesai', 'dikembalikan')
+        WHERE b.status = 'ditolak' 
+           OR b.status_pengembalian = 'dikembalikan'
         ORDER BY b.$orderBy DESC";
 $result = $conn->query($sql);
 ?>
@@ -45,7 +44,7 @@ $result = $conn->query($sql);
                             <td class="border px-4 py-2"><?= htmlspecialchars($row['nama_pelapor'] ?? 'Unknown') ?></td>
 
                             <td class="border px-4 py-2">
-                                <?php if ($row['status'] === 'dikembalikan'): ?>
+                                <?php if ($row['status_pengembalian'] === 'dikembalikan'): ?>
                                     <?php if (!empty($row['foto_bukti_pengembalian'])): ?>
                                         <img src="../uploads/<?= htmlspecialchars($row['foto_bukti_pengembalian']) ?>" 
                                              alt="Bukti" class="w-24 h-24 object-cover rounded shadow" />
@@ -58,12 +57,20 @@ $result = $conn->query($sql);
                             </td>
 
                             <td class="border px-4 py-2 font-semibold capitalize text-indigo-700">
-                                <?= htmlspecialchars($row['status']) ?>
+                                <?php
+                                if ($row['status'] === 'ditolak') {
+                                    echo 'Ditolak';
+                                } elseif ($row['status_pengembalian'] === 'dikembalikan') {
+                                    echo 'Dikembalikan';
+                                } else {
+                                    echo htmlspecialchars($row['status']);
+                                }
+                                ?>
                             </td>
 
                             <td class="border px-4 py-2">
                                 <?php
-                                if ($row['status'] === 'dikembalikan' && !empty($row['tanggal_pengembalian'])) {
+                                if ($row['status_pengembalian'] === 'dikembalikan' && !empty($row['tanggal_pengembalian'])) {
                                     echo date('d-m-Y H:i', strtotime($row['tanggal_pengembalian']));
                                 } else {
                                     echo '-';
